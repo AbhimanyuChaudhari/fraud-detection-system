@@ -10,44 +10,44 @@ MODELS_DIR = Path("./models")
 class FraudPredictor:
     def __init__(self):
         print("Loading models...")
-        self.xgb         = joblib.load(MODELS_DIR / "xgboost_model.pkl")
-        self.iso_forest  = joblib.load(MODELS_DIR / "isolation_forest.pkl")
-        self.scaler      = joblib.load(MODELS_DIR / "scaler.pkl")
-        self.meta        = joblib.load(MODELS_DIR / "meta_learner.pkl")
-        self.lstm        = tf.keras.models.load_model(MODELS_DIR / "lstm_model.keras")
+        self.xgb        = joblib.load(MODELS_DIR / "xgboost_model.pkl")
+        self.iso_forest = joblib.load(MODELS_DIR / "isolation_forest.pkl")
+        self.scaler     = joblib.load(MODELS_DIR / "scaler.pkl")
+        self.meta       = joblib.load(MODELS_DIR / "meta_learner.pkl")
+        self.lstm       = tf.keras.models.load_model(MODELS_DIR / "lstm_model.keras")
 
         with open(MODELS_DIR / "global_stats.json") as f:
             self.global_stats = json.load(f)
 
-        self.feature_cols = self.global_stats['feature_cols']
-        print(f"✓ All models loaded. Features: {len(self.feature_cols)}")
+        self.feature_cols  = self.global_stats['feature_cols']
+        self.threshold     = self.global_stats.get('best_threshold', 0.3)
+        print(f"✓ All models loaded. Features: {len(self.feature_cols)}, Threshold: {self.threshold:.4f}")
 
     def predict(self, features: dict) -> dict:
         start = time.time()
 
-        # Build feature vector in correct order
         X = np.array([[features.get(col, -999) for col in self.feature_cols]])
 
-        # XGBoost score
+        # XGBoost
         xgb_score = float(self.xgb.predict_proba(X)[0, 1])
 
-        # Isolation Forest score
+        # Isolation Forest
         iso_raw   = self.iso_forest.decision_function(X)[0]
         iso_score = float(np.clip(1 - (iso_raw + 0.5), 0, 1))
 
-        # LSTM score
-        X_scaled = self.scaler.transform(X)
-        X_lstm   = X_scaled.reshape(1, 1, X_scaled.shape[1])
+        # LSTM
+        X_scaled   = self.scaler.transform(X)
+        X_lstm     = X_scaled.reshape(1, 1, X_scaled.shape[1])
         lstm_score = float(self.lstm.predict(X_lstm, verbose=0)[0, 0])
 
-        # Meta-learner combines all three
-        meta_X    = np.array([[xgb_score, iso_score, lstm_score]])
+        # Meta-learner
+        meta_X      = np.array([[xgb_score, iso_score, lstm_score]])
         final_score = float(self.meta.predict_proba(meta_X)[0, 1])
 
-        # Risk label
-        if final_score >= 0.7:
+        # Risk label using tuned threshold
+        if final_score >= self.threshold * 1.5:
             risk = "HIGH"
-        elif final_score >= 0.4:
+        elif final_score >= self.threshold * 0.6:
             risk = "MEDIUM"
         else:
             risk = "LOW"
@@ -65,7 +65,6 @@ class FraudPredictor:
             "latency_ms": latency_ms
         }
 
-# Singleton — loaded once when API starts
 _predictor = None
 
 def get_predictor() -> FraudPredictor:
