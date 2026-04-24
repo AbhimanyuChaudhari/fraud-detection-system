@@ -1,0 +1,1 @@
+{"mean_amt": 135.02717637247264, "std_amt": 239.16252201373402, "feature_cols": ["TransactionAmt", "TransactionAmt_log", "TransactionAmt_zscore", "amt_round", "decimal_part", "hour", "day_of_week", "is_weekend", "is_night", "ProductCD", "card4", "card6", "P_emaildomain", "R_emaildomain", "DeviceType"]}
