@@ -4,6 +4,7 @@ import TransactionFeed from './components/TransactionFeed'
 import { SparklineChart, RiskDistChart } from './components/Charts'
 import KafkaProducer from './components/KafkaProducer'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const POLL_INTERVAL = 2000
 
 export default function App() {
@@ -14,8 +15,8 @@ export default function App() {
   const fetchData = useCallback(async () => {
     try {
       const [txRes, statsRes] = await Promise.all([
-        fetch('/api/transactions/recent?limit=50'),
-        fetch('/api/stats')
+        fetch(`${API}/transactions/recent?limit=50`),
+        fetch(`${API}/stats`)
       ])
       const txData    = await txRes.json()
       const statsData = await statsRes.json()

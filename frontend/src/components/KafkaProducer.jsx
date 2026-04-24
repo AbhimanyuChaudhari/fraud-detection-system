@@ -1,28 +1,31 @@
 import { useState } from 'react'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export default function KafkaProducer({ onTransaction }) {
-  const [running, setRunning]   = useState(false)
-  const [count, setCount]       = useState(0)
-  const [interval, setIntervalRef] = useState(null)
+  const [running, setRunning]      = useState(false)
+  const [count, setCount]          = useState(0)
+  const [intervalRef, setIntervalRef] = useState(null)
 
   const SAMPLE_TRANSACTIONS = [
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 250.00,   TransactionDT: 86400,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',     R_emaildomain: 'gmail.com',  DeviceType: 'desktop', isFraud: 0 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 15000.00, TransactionDT: 7200,   ProductCD: 'C', card4: 'mastercard', card6: 'credit', P_emaildomain: 'protonmail.com', R_emaildomain: 'yahoo.com',  DeviceType: 'mobile',  isFraud: 1 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 49.99,    TransactionDT: 43200,  ProductCD: 'H', card4: 'visa',       card6: 'debit',  P_emaildomain: 'outlook.com',   R_emaildomain: 'gmail.com',  DeviceType: 'desktop', isFraud: 0 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 8750.00,  TransactionDT: 3600,   ProductCD: 'S', card4: 'discover',   card6: 'credit', P_emaildomain: 'temp.com',      R_emaildomain: 'hotmail.com',DeviceType: 'mobile',  isFraud: 1 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 120.50,   TransactionDT: 64800,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',     R_emaildomain: 'gmail.com',  DeviceType: 'desktop', isFraud: 0 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 3200.00,  TransactionDT: 10800,  ProductCD: 'C', card4: 'amex',       card6: 'credit', P_emaildomain: 'icloud.com',    R_emaildomain: 'yahoo.com',  DeviceType: 'desktop', isFraud: 0 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 22000.00, TransactionDT: 1800,   ProductCD: 'R', card4: 'mastercard', card6: 'credit', P_emaildomain: 'guerrilla.com', R_emaildomain: 'temp.org',   DeviceType: 'mobile',  isFraud: 1 },
-    { TransactionID: `TX${Date.now()}`, TransactionAmt: 75.00,    TransactionDT: 54000,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',     R_emaildomain: 'gmail.com',  DeviceType: 'desktop', isFraud: 0 },
+    { TransactionAmt: 250.00,   TransactionDT: 86400,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',      R_emaildomain: 'gmail.com',   DeviceType: 'desktop', isFraud: 0 },
+    { TransactionAmt: 15000.00, TransactionDT: 7200,   ProductCD: 'C', card4: 'mastercard', card6: 'credit', P_emaildomain: 'protonmail.com',  R_emaildomain: 'yahoo.com',   DeviceType: 'mobile',  isFraud: 1 },
+    { TransactionAmt: 49.99,    TransactionDT: 43200,  ProductCD: 'H', card4: 'visa',       card6: 'debit',  P_emaildomain: 'outlook.com',    R_emaildomain: 'gmail.com',   DeviceType: 'desktop', isFraud: 0 },
+    { TransactionAmt: 8750.00,  TransactionDT: 3600,   ProductCD: 'S', card4: 'discover',   card6: 'credit', P_emaildomain: 'temp.com',       R_emaildomain: 'hotmail.com', DeviceType: 'mobile',  isFraud: 1 },
+    { TransactionAmt: 120.50,   TransactionDT: 64800,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',      R_emaildomain: 'gmail.com',   DeviceType: 'desktop', isFraud: 0 },
+    { TransactionAmt: 3200.00,  TransactionDT: 10800,  ProductCD: 'C', card4: 'amex',       card6: 'credit', P_emaildomain: 'icloud.com',     R_emaildomain: 'yahoo.com',   DeviceType: 'desktop', isFraud: 0 },
+    { TransactionAmt: 22000.00, TransactionDT: 1800,   ProductCD: 'R', card4: 'mastercard', card6: 'credit', P_emaildomain: 'guerrilla.com',  R_emaildomain: 'temp.org',    DeviceType: 'mobile',  isFraud: 1 },
+    { TransactionAmt: 75.00,    TransactionDT: 54000,  ProductCD: 'W', card4: 'visa',       card6: 'debit',  P_emaildomain: 'gmail.com',      R_emaildomain: 'gmail.com',   DeviceType: 'desktop', isFraud: 0 },
   ]
 
   let idx = 0
 
   async function sendNext() {
-    const tx = { ...SAMPLE_TRANSACTIONS[idx % SAMPLE_TRANSACTIONS.length], TransactionID: `TX${Date.now()}_${idx}` }
+    const base = SAMPLE_TRANSACTIONS[idx % SAMPLE_TRANSACTIONS.length]
+    const tx = { ...base, TransactionID: `TX${Date.now()}_${idx}` }
     idx++
     try {
-      const res = await fetch('/api/score', {
+      const res = await fetch(`${API}/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tx)
@@ -42,7 +45,7 @@ export default function KafkaProducer({ onTransaction }) {
 
   function stopStream() {
     setRunning(false)
-    clearInterval(interval)
+    clearInterval(intervalRef)
   }
 
   return (
@@ -84,7 +87,7 @@ export default function KafkaProducer({ onTransaction }) {
         <button
           onClick={running ? stopStream : startStream}
           style={{
-            padding: '8px 20px', borderRadius: 8, border: 'none',
+            padding: '8px 20px', borderRadius: 8,
             background: running ? 'rgba(255,77,109,0.15)' : 'var(--accent)',
             color: running ? 'var(--red)' : 'white',
             fontSize: 13, fontWeight: 500, cursor: 'pointer',
