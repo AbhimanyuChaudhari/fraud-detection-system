@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-DATABASE_URL = DATABASE_URL = "postgresql://fraud:fraud123@localhost:5433/frauddb"
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://fraud:fraud123@localhost:5433/frauddb")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
